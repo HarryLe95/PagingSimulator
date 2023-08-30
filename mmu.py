@@ -7,6 +7,18 @@
 * for the MMU.
 *
 '''
+import logging
+import sys
+
+FORMAT = '%(asctime)s|%(name)s|%(levelname)s - %(message)s'
+logging.basicConfig(
+    stream=sys.stdout,
+    format=FORMAT,
+    level=logging.DEBUG,
+    datefmt="%Y-%m-%dT%H:%M:%S"
+)
+
+
 class MMU:
     def read_memory(self, page_number):
         pass
