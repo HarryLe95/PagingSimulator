@@ -7,19 +7,16 @@
 * for the MMU.
 *
 '''
-import logging
-import sys
-
-FORMAT = '%(asctime)s|%(name)s|%(levelname)s - %(message)s'
-logging.basicConfig(
-    stream=sys.stdout,
-    format=FORMAT,
-    level=logging.DEBUG,
-    datefmt="%Y-%m-%dT%H:%M:%S"
-)
+import datetime
 
 
 class MMU:
+    def __init__(self, *args, **kwargs):
+        self.DEBUG = True
+        self.disk_reads = 0
+        self.disk_writes = 0
+        self.page_faults = 0
+
     def read_memory(self, page_number):
         pass
 
@@ -27,16 +24,25 @@ class MMU:
         pass
 
     def set_debug(self):
-        pass
+        self.DEBUG = True
 
     def reset_debug(self):
-        pass
+        self.DEBUG = False
 
     def get_total_disk_reads(self):
-        return -1
+        self.log("Get total disk reads")
+        return self.disk_reads
 
     def get_total_disk_writes(self):
-        return -1
+        self.log("Get total disk writes")
+        return self.disk_writes
 
     def get_total_page_faults(self):
-        return -1
+        self.log("Get total page faults")
+        return self.page_faults
+
+    def log(self, message: str):
+        if self.DEBUG:
+            ts = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            name = self.__class__.__name__
+            print(f"{ts}|{name}|DEBUG - {message}")
