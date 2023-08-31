@@ -15,7 +15,7 @@ VPN = int
 
 @dataclass
 class PTE:
-    PRESENT: bool = False  # Whether on disk or has been swapped out
+    PRESENT: bool = False
     DIRTY: bool = False  # Whether the page is dirty - has been modified since read
     ACCESS: bool = False  # Whether the page has been accessed
 
@@ -29,27 +29,12 @@ class MMU:
         self.page_faults = 0
         self.frames = frames
         self.frame_count = 0
-        self.memory: dict[VPN, PTE] = {}
+        self.pointer = 0
+        self.memory = [-1] * self.frames
+        self.page_table: dict[VPN, PTE] = {}
 
     def _get_evicted_frame(self):
         return -1
-
-    def _print_memory(self, active: bool = True):
-        self.log("Displaying memory content: ")
-        if len(self.memory) == 0:
-            print("")
-        if active:
-            valid_mem = {k: v for k, v in self.memory.items() if v.PRESENT}
-        else:
-            valid_mem = self.memory
-        for k, v in valid_mem.items():
-            print(f"VPN: {k}: {v}")
-
-    def _post_add_frame_hook(self, page_numer):
-        pass
-
-    def _post_evict_frame_hook(self, page_numer):
-        pass
 
     def _evict_frame(self, page_number: int):
         """
@@ -62,15 +47,16 @@ class MMU:
         :return:
         """
         self.log(f"CACHE FULL: remove page: {page_number} from memory")
-        entry = self.memory[page_number]
+        entry = self.page_table[page_number]
         entry.PRESENT = False
         entry.ACCESS = False
         if entry.DIRTY:
+            entry.DIRTY = False
             self.log(f"DIRTY LINE: write page: {page_number} to disk")
             self.disk_writes += 1
-            entry.DIRTY = False
+        self.memory[self.memory.index(page_number)] = -1
+        self.log(f"Memory: {self.memory}")
         self.frame_count -= 1
-
 
     def _add_frame(self, page_number: int):
         """
@@ -82,12 +68,31 @@ class MMU:
         :param page_number: page number of new entry
         :return:
         """
-        entry = self.memory[page_number]
-        entry.PRESENT = True
+        # Create a new entry in page table
+        self.page_table[page_number] = PTE(
+            PRESENT=True,
+            ACCESS=True,
+            DIRTY=False
+        )
+
+        # Find unallocated slot to put memory inside
+        original_ptr = self.pointer
+        while self.memory[self.pointer] != -1:
+            self.pointer = (self.pointer + 1) % self.frames
+            # No free slot, evict frame
+            if original_ptr == self.pointer:
+                page_to_remove = self._get_evicted_frame()
+                self._evict_frame(page_to_remove)
+
+        # Place page to memory and advance pointer
+        self.memory[self.pointer] = page_number
+        self.pointer = (self.pointer + 1) % self.frames
+        self.log(f"Memory: {self.memory}")
+
+        # Update counters
         self.page_faults += 1
         self.disk_reads += 1
         self.frame_count += 1
-
 
     def access_page(self, page_number, caller_method):
         """
@@ -100,27 +105,14 @@ class MMU:
 
         If the entry is present, do nothing.
 
+        :param caller_method: READ/WRITE
         :param page_number: access page number
         """
-        # Create new entry or get existing entry
-        self.memory[page_number] = self.memory.get(page_number, PTE())
-        entry = self.memory[page_number]
-        entry.ACCESS = True
-
-        # Read entry from disk if not present in memory
-        if entry.PRESENT:
-            self.log(f"MEM_{caller_method} page {page_number}. CACHE HIT.")
+        if page_number in self.memory:
+            self.log(f"{caller_method}_MEM: CACHE HIT: {page_number}")
         else:
-            self.log(f"MEM_{caller_method} page {page_number}. CACHE MISS. Reading from disk")
+            self.log(f"{caller_method}_MEM: CACHE MISS. Reading from disk: {page_number}")
             self._add_frame(page_number)
-
-
-        # Evict a page from memory if page full:
-        if self.frame_count > self.frames:
-            remove_page = self._get_evicted_frame()
-            self._evict_frame(remove_page)
-            self._post_evict_frame_hook(remove_page)
-        self._post_add_frame_hook(page_number)
 
     # Default Interface
     def read_memory(self, page_number):
@@ -128,7 +120,7 @@ class MMU:
 
     def write_memory(self, page_number):
         self.access_page(page_number, "WRITE")
-        self.memory[page_number].DIRTY = True
+        self.page_table[page_number].DIRTY = True
 
     def set_debug(self):
         self.DEBUG = True

@@ -5,21 +5,20 @@ class LruMMU(MMU):
     def __init__(self, frames):
         # TODO: Constructor logic for LruMMU
         super().__init__(frames)
-        self.active_frames = []
+        self.page_queue = []
 
-    def _post_evict_frame_hook(self, page_numer):
-        self.active_frames.remove(page_numer)
-        self.log(f"Post evict: {self.active_frames}")
+    def access_page(self, page_number, caller_method):
+        super().access_page(page_number, caller_method)
 
-    def _post_add_frame_hook(self, page_number):
-        if page_number in self.active_frames:
-            self.active_frames.remove(page_number)
-        self.active_frames.append(page_number)
-        self.log(f"Post add: {self.active_frames}")
+        # Only add new page to queue once previous once was removed
+        if page_number in self.page_queue:
+            self.page_queue.remove(page_number)
+        self.page_queue.append(page_number)
+        self.log(f"Page queue: {self.page_queue}")
 
     def _get_evicted_frame(self):
-        if len(self.active_frames) != 0:
-            return self.active_frames[0]
+        if len(self.page_queue) != 0:
+            return self.page_queue.pop(0)
         raise ValueError("Memory is empty")
 
 
