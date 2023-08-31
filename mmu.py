@@ -54,8 +54,9 @@ class MMU:
             entry.DIRTY = False
             self.log(f"DIRTY LINE: write page: {page_number} to disk")
             self.disk_writes += 1
-        self.memory[self.memory.index(page_number)] = -1
-        self.log(f"Memory: {self.memory}")
+        self.pointer = self.memory.index(page_number)
+        self.memory[self.pointer] = -1
+        self.log(f"Memory: {self.memory}, pointer: {self.pointer}")
         self.frame_count -= 1
 
     def _add_frame(self, page_number: int):
@@ -87,7 +88,7 @@ class MMU:
         # Place page to memory and advance pointer
         self.memory[self.pointer] = page_number
         self.pointer = (self.pointer + 1) % self.frames
-        self.log(f"Memory: {self.memory}")
+        self.log(f"Memory: {self.memory}, pointer: {self.pointer}")
 
         # Update counters
         self.page_faults += 1
@@ -109,7 +110,8 @@ class MMU:
         :param page_number: access page number
         """
         if page_number in self.memory:
-            self.log(f"{caller_method}_MEM: CACHE HIT: {page_number}")
+            self.pointer = self.memory.index(page_number)
+            self.log(f"{caller_method}_MEM: CACHE HIT: {page_number}, pointer: {self.pointer}")
         else:
             self.log(f"{caller_method}_MEM: CACHE MISS. Reading from disk: {page_number}")
             self._add_frame(page_number)
