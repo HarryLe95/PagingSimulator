@@ -70,7 +70,7 @@ class MMU:
             self.disk_writes += 1
             entry.DIRTY = False
         self.frame_count -= 1
-        self._post_evict_frame_hook(page_number)
+
 
     def _add_frame(self, page_number: int):
         """
@@ -87,7 +87,7 @@ class MMU:
         self.page_faults += 1
         self.disk_reads += 1
         self.frame_count += 1
-        self._post_add_frame_hook(page_number)
+
 
     def access_page(self, page_number, caller_method):
         """
@@ -114,10 +114,13 @@ class MMU:
             self.log(f"MEM_{caller_method} page {page_number}. CACHE MISS. Reading from disk")
             self._add_frame(page_number)
 
+
         # Evict a page from memory if page full:
         if self.frame_count > self.frames:
             remove_page = self._get_evicted_frame()
             self._evict_frame(remove_page)
+            self._post_evict_frame_hook(remove_page)
+        self._post_add_frame_hook(page_number)
 
     # Default Interface
     def read_memory(self, page_number):
@@ -142,7 +145,7 @@ class MMU:
     def get_total_page_faults(self):
         return self.page_faults
 
-    def log(self, message: str):
+    def log(self, message):
         if self.DEBUG:
             ts = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             name = self.__class__.__name__
