@@ -15,7 +15,6 @@ VPN = int
 
 @dataclass
 class PTE:
-    PRESENT: bool = False
     DIRTY: bool = False  # Whether the page is dirty - has been modified since read
     ACCESS: bool = False  # Whether the page has been accessed
 
@@ -40,7 +39,7 @@ class MMU:
         """
         Remove a frame from main memory. Writes back to disk if dirty.
 
-        Reset PRESENT, ACCESS, DIRTY bits, reduce frame_count, and perform
+        Reset ACCESS, DIRTY bits, reduce frame_count, and perform
         post_evict_frame_hook
 
         :param page_number: page id to evict
@@ -48,7 +47,6 @@ class MMU:
         """
         self.log(f"CACHE FULL: remove page: {page_number} from memory")
         entry = self.page_table[page_number]
-        entry.PRESENT = False
         entry.ACCESS = False
         if entry.DIRTY:
             entry.DIRTY = False
@@ -56,7 +54,6 @@ class MMU:
             self.disk_writes += 1
         self.pointer = self.memory.index(page_number)
         self.memory[self.pointer] = -1
-        self.log(f"Memory: {self.memory}, pointer: {self.pointer}")
         self.frame_count -= 1
 
     def _add_frame(self, page_number: int):
@@ -70,11 +67,8 @@ class MMU:
         :return:
         """
         # Create a new entry in page table
-        self.page_table[page_number] = PTE(
-            PRESENT=True,
-            ACCESS=True,
-            DIRTY=False
-        )
+        self.page_table[page_number] = self.page_table.get(page_number, PTE())
+        self.page_table[page_number].ACCESS = True
 
         # Find unallocated slot to put memory inside
         original_ptr = self.pointer
@@ -88,8 +82,7 @@ class MMU:
         # Place page to memory and advance pointer
         self.memory[self.pointer] = page_number
         self.pointer = (self.pointer + 1) % self.frames
-        self.log(f"Memory: {self.memory}, pointer: {self.pointer}")
-
+        self._print_access()
         # Update counters
         self.page_faults += 1
         self.disk_reads += 1
@@ -111,8 +104,11 @@ class MMU:
         """
         if page_number in self.memory:
             self.pointer = self.memory.index(page_number)
-            self.log(f"{caller_method}_MEM: CACHE HIT: {page_number}, pointer: {self.pointer}")
-        else:
+            self.log(f"{caller_method}_MEM: CACHE HIT: {page_number}")
+            self.page_table[page_number].ACCESS = True
+            self._print_access()
+
+        else:  # Page fault event
             self.log(f"{caller_method}_MEM: CACHE MISS. Reading from disk: {page_number}")
             self._add_frame(page_number)
 
@@ -138,6 +134,18 @@ class MMU:
 
     def get_total_page_faults(self):
         return self.page_faults
+
+    def _set_access(self):
+        for page_number in self.memory:
+            if page_number != -1:
+                self.page_table[page_number].ACCESS = False
+
+    @property
+    def access(self):
+        return [int(self.page_table[item].ACCESS) if item != -1 else -1 for item in self.memory]
+
+    def _print_access(self):
+        self.log(f"Memory: {self.memory}\tAccess: {self.access}")
 
     def log(self, message):
         if self.DEBUG:
