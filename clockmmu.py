@@ -21,26 +21,3 @@ class ClockMMU(MMU):
         access = [int(self.page_table[item].ACCESS) if item != -1 else -1 for item in self.memory]
         self.log(f"Memory: {self.memory}\tAccess: {access}\tClock: {self.clock_pointer}")
 
-
-if __name__ == "__main__":
-    mmu = ClockMMU(11)
-    mmu.read_memory(1)
-    mmu.read_memory(2)
-    mmu.read_memory(3)
-    mmu.read_memory(4)
-    mmu.read_memory(5)
-    mmu.read_memory(6)
-    mmu.read_memory(7)
-    mmu.read_memory(8)
-    mmu.read_memory(9)
-    mmu.read_memory(10)
-    mmu.read_memory(11)
-    mmu._set_access()
-    mmu.read_memory(1)
-    mmu.read_memory(3)
-    mmu.read_memory(6)
-    mmu.read_memory(55)
-    mmu.read_memory(4)
-    mmu.read_memory(5)
-    mmu.read_memory(77)
-    print("End")

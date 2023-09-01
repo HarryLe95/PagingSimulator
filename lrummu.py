@@ -22,17 +22,3 @@ class LruMMU(MMU):
         raise ValueError("Memory is empty")
 
 
-if __name__ == "__main__":
-    mmu = LruMMU(3)
-    mmu.read_memory(0)
-    mmu.read_memory(1)
-    mmu.read_memory(2)
-    mmu.read_memory(0)
-    mmu.read_memory(1)
-    mmu.read_memory(3)
-    mmu.read_memory(0)
-    mmu.read_memory(3)
-    mmu.read_memory(1)
-    mmu.read_memory(2)
-    mmu.read_memory(1)
-    print("End")
