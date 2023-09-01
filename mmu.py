@@ -23,7 +23,7 @@ class PTE:
 class MMU:
 
     def __init__(self, frames: int, *args, **kwargs):
-        self.DEBUG = True
+        self.DEBUG = False
         self.disk_reads = 0
         self.disk_writes = 0
         self.page_faults = 0

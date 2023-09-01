@@ -59,4 +59,16 @@ To run tests in the folder `tests/`
 make pytest <item>
 ```
 
-Where item can be clock, esc, fifo, lru 
+Where item can be clock, esc, fifo, lru
+
+## Plotting
+
+To generate plots use
+
+```
+poetry run python driver.py --files <file1> <file2> <file3>
+```
+
+Example of plot: 
+
+![](plots/bzip.trace.png)
