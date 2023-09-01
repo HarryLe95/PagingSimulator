@@ -39,3 +39,5 @@ ifeq ($(filter pytest,$(MAKECMDGOALS)),pytest)
 else
 	@poetry run pytest
 endif
+
+tests: pytest lru clock

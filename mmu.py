@@ -17,6 +17,7 @@ VPN = int
 class PTE:
     DIRTY: bool = False  # Whether the page is dirty - has been modified since read
     ACCESS: bool = False  # Whether the page has been accessed
+    SECOND: bool = False
 
 
 class MMU:
